@@ -175,29 +175,68 @@ if st.button("🚀 生成KPI公式", type="primary", use_container_width=True):
             st.info("💡 建议：请用清晰的句子，例如：‘每超10万加2分’、‘完成率在60%~80%之间得3分’")
         else:
             # 显示结果
-            st.success("✅ AI生成成功！")
+                        st.success("✅ AI生成成功！")
+
+            # 设置统一的宽度：与输入框一致
+            # 用 st.text_area 模拟代码框：可横向滚动、宽度自适应、禁用编辑
+            input_width = "100%"  # 全宽
 
             col1, col2, col3 = st.columns(3)
+
             with col1:
                 st.markdown("#### 🛡️ 条件")
-                st.code(result["condition"], language="text")
+                st.text_area(
+                    label="",
+                    value=result["condition"],
+                    height=150,
+                    key="condition_display",
+                    disabled=True,
+                    label_visibility="hidden",
+                    help="点击可复制，自动换行，超长可横向滚动"
+                )
+
             with col2:
                 st.markdown("#### 🧮 公式")
-                st.code(result["formula"], language="text")
+                st.text_area(
+                    label="",
+                    value=result["formula"],
+                    height=150,
+                    key="formula_display",
+                    disabled=True,
+                    label_visibility="hidden",
+                    help="点击可复制，自动换行，超长可横向滚动"
+                )
+
             with col3:
                 st.markdown("#### 💬 说明")
-                st.text(result["explanation"])
+                st.text_area(
+                    label="",
+                    value=result["explanation"],
+                    height=150,
+                    key="explanation_display",
+                    disabled=True,
+                    label_visibility="hidden",
+                    help="用户原话"
+                )
 
             # 复制按钮
-            col1, col2 = st.columns(2)
+                        # 添加 3 个复制按钮，和展示框对齐
+            col1, col2, col3 = st.columns(3, gap="small")
             with col1:
-                if st.button("📋 复制公式", key="copy_formula"):
-                    st.write(result["formula"])  # 触发复制（Streamlit的代码块可复制）
-                    st.toast("✅ 公式已复制到剪贴板", icon="📋")
+                if st.button("📋 复制条件", key="copy_condition_btn", use_container_width=True):
+                    st.clipboard(result["condition"])
+                    st.toast("✅ 条件已复制！")
+
             with col2:
-                if st.button("📋 复制条件", key="copy_condition"):
-                    st.write(result["condition"])
-                    st.toast("✅ 条件已复制到剪贴板", icon="📋")
+                if st.button("📋 复制公式", key="copy_formula_btn", use_container_width=True):
+                    st.clipboard(result["formula"])
+                    st.toast("✅ 公式已复制！")
+
+            with col3:
+                if st.button("📋 复制说明", key="copy_explanation_btn", use_container_width=True):
+                    st.clipboard(result["explanation"])
+                    st.toast("✅ 说明已复制！")
+
 
             # 下载JSON
             json_str = json.dumps(result, ensure_ascii=False, indent=2)
@@ -222,5 +261,6 @@ st.markdown("""
 - 完成率、超计划、控制在、扣分、加分、每、以上、以下、达标、标杆、基数、上限、封顶  
 - 机构、行员、计划值、指标值、权重、目标值、考核基数
 """)
+
 
 
