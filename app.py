@@ -202,22 +202,38 @@ if st.session_state.result is not None:
                 help="用户原话"
             )
 
-        # 下方三个复制按钮（全宽度按钮，更易点击）
+        # 下方三个复制按钮 —— 兼容所有 Streamlit 版本
         col1, col2, col3 = st.columns(3, gap="small")
+
+        # 自定义复制函数（HTML + JavaScript）
+        def create_copy_button(text, label, key_suffix):
+            # JavaScript 复制代码
+            js_code = f"""
+            <script>
+            function copyToClipboard_{key_suffix}() {{
+                navigator.clipboard.writeText("{text.replace('"', '\\"')}").then(function() {{
+                    console.log("Copied: {text}");
+                }}).catch(function(err) {{
+                    console.error("Could not copy text: ", err);
+                    alert("复制失败，请手动选择文本后按 Ctrl+C");
+                }});
+            }}
+            </script>
+            <button onclick="copyToClipboard_{key_suffix}()" style="width:100%; padding:10px; font-size:14px; background-color:#0066cc; color:white; border:none; border-radius:6px; cursor:pointer;">
+                {label}
+            </button>
+            """
+            st.components.v1.html(js_code, height=50)
+
         with col1:
-            if st.button("📋 复制条件", key="copy_condition_btn", use_container_width=True):
-                st.clipboard(result["condition"])
-                st.toast("✅ 条件已复制！", icon="📋")
+            create_copy_button(result["condition"], "📋 复制条件", "condition")
 
         with col2:
-            if st.button("📋 复制公式", key="copy_formula_btn", use_container_width=True):
-                st.clipboard(result["formula"])
-                st.toast("✅ 公式已复制！", icon="📋")
+            create_copy_button(result["formula"], "📋 复制公式", "formula")
 
         with col3:
-            if st.button("📋 复制说明", key="copy_explanation_btn", use_container_width=True):
-                st.clipboard(result["explanation"])
-                st.toast("✅ 说明已复制！", icon="📋")
+            create_copy_button(result["explanation"], "📋 复制说明", "explanation")
+
 
         json_str = json.dumps(result, ensure_ascii=False, indent=2)
         st.download_button(
@@ -239,4 +255,5 @@ st.markdown("""
 ### 💡 支持的关键词：
 完成率、超计划、控制在、扣分、加分、每、以上、以下、达标、标杆、基数、上限、封顶
 """)
+
 
