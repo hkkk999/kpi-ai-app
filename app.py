@@ -243,15 +243,16 @@ if st.session_state.result is not None:
 
         # 第一列：条件框
         with col1:
-            render_box_with_copy_btn("📋 复制条件", result["condition"], "condition")
+            render_box_with_copy_btn("📋 复制内容", result["condition"], "condition")
 
         # 第二列：公式框
         with col2:
-            render_box_with_copy_btn("📋 复制公式", result["formula"], "formula")
+            render_box_with_copy_btn("📋 复制内容", result["formula"], "formula")
 
         # 第三列：说明框
         with col3:
-            render_box_with_copy_btn("📋 复制说明", result["explanation"], "explanation")
+            render_box_with_copy_btn("📋 复制内容", result["explanation"], "explanation")
+
 
         # 下载按钮单独放在最下方，居中对齐
         st.markdown("<br><br>", unsafe_allow_html=True)
@@ -277,4 +278,5 @@ st.markdown("""
 - 机构、行员、计划值、指标值、权重、目标值、考核基数
 
 """)
+
 
