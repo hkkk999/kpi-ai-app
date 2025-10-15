@@ -174,7 +174,7 @@ if st.button("🚀 生成KPI公式", type="primary", use_container_width=True):
     if not user_input.strip():
         st.warning("⚠️ 请输入描述内容")
     else:
-        with st.spinner("🧠 AI正在理解你的需求，请稍候...（约5-8秒）"):
+        with st.spinner("🧠 AI正在理解你的需求，请稍候...（约3-5秒）"):
             result = call_siliconflow(user_input)
             st.session_state.result = result  # ✅ 持久保存！
             st.session_state.last_input = user_input
@@ -195,9 +195,11 @@ if st.session_state.result is not None:
         col1, col2, col3 = st.columns(3)
 
         # 定义一个复用的函数：生成一个“框 + 按钮”组合
-        def render_box_with_copy_btn(label, content, key_suffix):
+        def render_box_with_copy_btn(title, button_label, content, key_suffix):
             with st.container():
-                st.markdown(f"#### {label}")
+                # ✅ 标题用 title 参数 → 独立于按钮
+                st.markdown(f"#### {title}")
+
                 st.text_area(
                     label="",
                     value=content,
@@ -208,7 +210,7 @@ if st.session_state.result is not None:
                     help="点击可复制，超长可横向滚动"
                 )
 
-                # 复制按钮，使用 JavaScript 带反馈
+                # ✅ 按钮用 button_label 参数 —— 可以独立设置
                 escaped_content = content.replace('"', '\\"')
                 button_id = f"btn_{key_suffix}"
 
@@ -236,22 +238,24 @@ if st.session_state.result is not None:
                            background-color:#0066cc; color:white; border:none; 
                            border-radius:6px; cursor:pointer; margin-top:8px;
                            transition: background-color 0.3s ease;">
-                    {label}
+                    {button_label}
                 </button>
                 """
                 st.components.v1.html(js_code, height=70)
 
+
         # 第一列：条件框
         with col1:
-            render_box_with_copy_btn("📋 复制内容", result["condition"], "condition")
+            render_box_with_copy_btn("🛡️ 条件", "📋 复制内容", result["condition"], "condition")
 
         # 第二列：公式框
         with col2:
-            render_box_with_copy_btn("📋 复制内容", result["formula"], "formula")
+            render_box_with_copy_btn("🧮 公式", "📋 复制内容", result["formula"], "formula")
 
         # 第三列：说明框
         with col3:
-            render_box_with_copy_btn("📋 复制内容", result["explanation"], "explanation")
+            render_box_with_copy_btn("💬 说明", "📋 复制内容", result["explanation"], "explanation")
+
 
 
         # 下载按钮单独放在最下方，居中对齐
@@ -278,5 +282,4 @@ st.markdown("""
 - 机构、行员、计划值、指标值、权重、目标值、考核基数
 
 """)
-
 
