@@ -163,104 +163,79 @@ if st.session_state.result is not None:
     else:
         st.success("✅ AI生成成功！")
 
-        # 展示条件、公式、说明 —— 等宽 + 可滚动 + 可复制
-        col1, col2, col3 = st.columns(3)
+            # 创建三列，每一列包含一个框 + 下方一个按钮
+            col1, col2, col3 = st.columns(3)
 
-        with col1:
-            st.markdown("#### 🛡️ 条件")
-            st.text_area(
-                label="",
-                value=result["condition"],
-                height=150,
-                key="condition_display",
-                disabled=True,
-                label_visibility="hidden",
-                help="点击可复制，超长可横向滚动"
-            )
+            # 定义一个复用的函数：生成一个“框 + 按钮”组合
+            def render_box_with_copy_btn(label, content, key_suffix):
+                with st.container():  # 确保内部布局垂直
+                    st.markdown(f"#### {label}")
+                    st.text_area(
+                        label="",
+                        value=content,
+                        height=150,
+                        key=f"{key_suffix}_display",
+                        disabled=True,
+                        label_visibility="hidden",
+                        help="点击可复制，超长可横向滚动"
+                    )
 
-        with col2:
-            st.markdown("#### 🧮 公式")
-            st.text_area(
-                label="",
-                value=result["formula"],
-                height=150,
-                key="formula_display",
-                disabled=True,
-                label_visibility="hidden",
-                help="点击可复制，超长可横向滚动"
-            )
+                    # 复制按钮，使用 JavaScript 带反馈
+                    escaped_content = content.replace('"', '\\"')
+                    button_id = f"btn_{key_suffix}"
 
-        with col3:
-            st.markdown("#### 💬 说明")
-            st.text_area(
-                label="",
-                value=result["explanation"],
-                height=150,
-                key="explanation_display",
-                disabled=True,
-                label_visibility="hidden",
-                help="用户原话"
-            )
+                    js_code = f"""
+                    <script>
+                    function copyToClipboard_{key_suffix}() {{
+                        const button = document.getElementById('{button_id}');
+                        const originalText = button.innerText;
+                        
+                        navigator.clipboard.writeText("{escaped_content}").then(function() {{
+                            button.innerText = "✔️ 已复制！";
+                            button.style.backgroundColor = "#28a745";
+                            setTimeout(function() {{
+                                button.innerText = originalText;
+                                button.style.backgroundColor = "#0066cc";
+                            }}, 2000);
+                        }}).catch(function(err) {{
+                            alert("复制失败，请手动选择文本后按 Ctrl+C");
+                            console.error("复制失败: ", err);
+                        }});
+                    }}
+                    </script>
+                    <button id="{button_id}" onclick="copyToClipboard_{key_suffix}()" 
+                        style="width:100%; padding:10px; font-size:14px; 
+                               background-color:#0066cc; color:white; border:none; 
+                               border-radius:6px; cursor:pointer; margin-top:8px;
+                               transition: background-color 0.3s ease;">
+                        {label}
+                    </button>
+                    """
+                    st.components.v1.html(js_code, height=70)
 
-            # 下方三个复制按钮 —— 带视觉反馈（成功提示 + 按钮状态切换）
-            col1, col2, col3 = st.columns(3, gap="small")
-
-
-            def create_copy_button_with_feedback(text, label, key_suffix):
-                # 将文本中的双引号转义，防止JS语法错误
-                escaped_text = text.replace('"', '\\"')
-                button_id = f"copy_btn_{key_suffix}"
-
-                js_code = f"""
-                <script>
-                function copyToClipboard_{key_suffix}() {{
-                    const button = document.getElementById('{button_id}');
-                    const originalText = button.innerText;
-
-                    navigator.clipboard.writeText("{escaped_text}").then(function() {{
-                        // 成功：按钮变“已复制”
-                        button.innerText = "✔️ 已复制！";
-                        button.style.backgroundColor = "#28a745";
-
-                        // 2秒后恢复
-                        setTimeout(function() {{
-                            button.innerText = originalText;
-                            button.style.backgroundColor = "#0066cc";
-                        }}, 2000);
-                    }}).catch(function(err) {{
-                        alert("复制失败，请手动选择文本后按 Ctrl+C");
-                        console.error("复制失败: ", err);
-                    }});
-                }}
-                </script>
-                <button id="{button_id}" onclick="copyToClipboard_{key_suffix}()" 
-                    style="width:100%; padding:10px; font-size:14px; background-color:#0066cc; color:white; border:none; border-radius:6px; cursor:pointer; transition: background-color 0.3s ease;">
-                    {label}
-                </button>
-                """
-
-                st.components.v1.html(js_code, height=60)
-
-
+            # 第一列：条件框
             with col1:
-                create_copy_button_with_feedback(result["condition"], "📋 复制条件", "condition")
+                render_box_with_copy_btn("📋 复制条件", result["condition"], "condition")
 
+            # 第二列：公式框
             with col2:
-                create_copy_button_with_feedback(result["formula"], "📋 复制公式", "formula")
+                render_box_with_copy_btn("📋 复制公式", result["formula"], "formula")
 
+            # 第三列：说明框
             with col3:
-                create_copy_button_with_feedback(result["explanation"], "📋 复制说明", "explanation")
+                render_box_with_copy_btn("📋 复制说明", result["explanation"], "explanation")
 
-       
+            # 下载按钮单独放在最下方，居中对齐
+            st.markdown("<br><br>", unsafe_allow_html=True)  # 留点空隙
+            json_str = json.dumps(result, ensure_ascii=False, indent=2)
+            st.download_button(
+                label="💾 下载 JSON 文件",
+                data=json_str,
+                file_name="kpi_formula.json",
+                mime="application/json",
+                use_container_width=True
+            )
 
-        json_str = json.dumps(result, ensure_ascii=False, indent=2)
-        st.download_button(
-            label="💾 下载 JSON 文件",
-            data=json_str,
-            file_name="kpi_formula.json",
-            mime="application/json",
-            use_container_width=True
-        )
 
 st.divider()
 st.markdown("""
@@ -273,6 +248,7 @@ st.markdown("""
 ### 💡 支持的关键词：
 完成率、超计划、控制在、扣分、加分、每、以上、以下、达标、标杆、基数、上限、封顶
 """)
+
 
 
 
