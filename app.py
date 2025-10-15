@@ -202,10 +202,11 @@ if st.session_state.result is not None:
                 help="用户原话"
             )
 
-             # 下方三个复制按钮 —— 带视觉反馈（成功提示 + 按钮状态切换）
-        col1, col2, col3 = st.columns(3, gap="small")
+            # 下方三个复制按钮 —— 带视觉反馈（成功提示 + 按钮状态切换）
+            col1, col2, col3 = st.columns(3, gap="small")
 
-        def create_copy_button_with_feedback(text, label, key_suffix):
+
+            def create_copy_button_with_feedback(text, label, key_suffix):
                 # 将文本中的双引号转义，防止JS语法错误
                 escaped_text = text.replace('"', '\\"')
                 button_id = f"copy_btn_{key_suffix}"
@@ -215,12 +216,12 @@ if st.session_state.result is not None:
                 function copyToClipboard_{key_suffix}() {{
                     const button = document.getElementById('{button_id}');
                     const originalText = button.innerText;
-                    
+
                     navigator.clipboard.writeText("{escaped_text}").then(function() {{
                         // 成功：按钮变“已复制”
                         button.innerText = "✔️ 已复制！";
                         button.style.backgroundColor = "#28a745";
-                        
+
                         // 2秒后恢复
                         setTimeout(function() {{
                             button.innerText = originalText;
@@ -240,6 +241,7 @@ if st.session_state.result is not None:
 
                 st.components.v1.html(js_code, height=60)
 
+
             with col1:
                 create_copy_button_with_feedback(result["condition"], "📋 复制条件", "condition")
 
@@ -248,6 +250,7 @@ if st.session_state.result is not None:
 
             with col3:
                 create_copy_button_with_feedback(result["explanation"], "📋 复制说明", "explanation")
+
        
 
         json_str = json.dumps(result, ensure_ascii=False, indent=2)
@@ -270,6 +273,7 @@ st.markdown("""
 ### 💡 支持的关键词：
 完成率、超计划、控制在、扣分、加分、每、以上、以下、达标、标杆、基数、上限、封顶
 """)
+
 
 
 
