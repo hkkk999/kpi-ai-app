@@ -147,9 +147,13 @@ st.set_page_config(
     layout="centered"
 )
 
-# ======== Streamlit 界面 =========
-st.set_page_config(page_title="📊 KPI智能生成助手", page_icon="📊", layout="centered")
+# ======== 初始化 Session State ==========
+if "result" not in st.session_state:
+    st.session_state.result = None
+if "last_input" not in st.session_state:
+    st.session_state.last_input = ""
 
+# 页面标题
 st.title("📊 KPI智能自然语言生成系统")
 st.markdown("""
 **让业务人员一句话，自动生成可执行的KPI公式！**  
@@ -158,45 +162,39 @@ st.markdown("""
 ✅ 输出JSON
 """)
 
-# 初始化 Session State：确保数据持久存在
-if "last_input" not in st.session_state:
-    st.session_state.last_input = ""
-if "result" not in st.session_state:
-    st.session_state.result = None
-
+# 输入框
 user_input = st.text_area(
     "📝 请输入你的KPI考核规则（自然语言）：",
     placeholder="例如：完成率低于80%，扣（100-完成率）*0.3分\n\n控制在7088万以内得5分，超过得0分",
-    height=120,
-    key="user_input_area"
+    height=120
 )
 
-# 生成按钮：只在这个按钮被点击时更新 result
+# 生成按钮
 if st.button("🚀 生成KPI公式", type="primary", use_container_width=True):
     if not user_input.strip():
         st.warning("⚠️ 请输入描述内容")
     else:
-        with st.spinner("🧠 AI正在理解你的需求，请稍候...（约3-5秒）"):
+        with st.spinner("🧠 AI正在理解你的需求，请稍候...（约5-8秒）"):
             result = call_siliconflow(user_input)
+            st.session_state.result = result  # ✅ 持久保存！
             st.session_state.last_input = user_input
-            st.session_state.result = result  # ✅ 永久保存，不受其他按钮影响！
 
 st.divider()
 
-# 只有当 result 有值时才显示内容（下载按钮不会清空它！）
+# 只有当有 result 时才显示
 if st.session_state.result is not None:
-    result = st.session_state.result  # ✅ 从 session_state 获取，永不丢失！
+    result = st.session_state.result  # ✅ 从内存读取，永不丢！
 
     if "error" in result:
         st.error(f"❌ AI出错了：{result['error']}")
-        st.info("💡 建议：请用清晰的句子，例如：'完成率在60%~80%之间得3分'")
+        st.info("💡 建议：请用清晰的句子，例如：‘每超10万加2分’、‘完成率在60%~80%之间得3分’")
     else:
         st.success("✅ AI生成成功！")
 
-        # 创建三列，每列包含：文本框 + 复制按钮
+        # 创建三列，每一列包含一个框 + 下方一个按钮
         col1, col2, col3 = st.columns(3)
 
-
+        # 定义一个复用的函数：生成一个“框 + 按钮”组合
         def render_box_with_copy_btn(label, content, key_suffix):
             with st.container():
                 st.markdown(f"#### {label}")
@@ -210,7 +208,7 @@ if st.session_state.result is not None:
                     help="点击可复制，超长可横向滚动"
                 )
 
-                # 复制按钮：带 JS 反馈
+                # 复制按钮，使用 JavaScript 带反馈
                 escaped_content = content.replace('"', '\\"')
                 button_id = f"btn_{key_suffix}"
 
@@ -243,16 +241,19 @@ if st.session_state.result is not None:
                 """
                 st.components.v1.html(js_code, height=70)
 
-
-        # 每一列绑定一个框 + 按钮
+        # 第一列：条件框
         with col1:
             render_box_with_copy_btn("📋 复制条件", result["condition"], "condition")
+
+        # 第二列：公式框
         with col2:
             render_box_with_copy_btn("📋 复制公式", result["formula"], "formula")
+
+        # 第三列：说明框
         with col3:
             render_box_with_copy_btn("📋 复制说明", result["explanation"], "explanation")
 
-        # 下载按钮放在最下方，独立于三列（不会触发重新运行导致数据丢失）
+        # 下载按钮单独放在最下方，居中对齐
         st.markdown("<br><br>", unsafe_allow_html=True)
         json_str = json.dumps(result, ensure_ascii=False, indent=2)
         st.download_button(
@@ -276,3 +277,4 @@ st.markdown("""
 - 机构、行员、计划值、指标值、权重、目标值、考核基数
 
 """)
+
