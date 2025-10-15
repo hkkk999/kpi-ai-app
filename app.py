@@ -1,8 +1,3 @@
-# _*_ coding : utf-8_*_
-# @Time :  15:52
-# @Author :hkk
-# @File : app
-# @Project : AutoExcelToPpt
 # -*- coding: utf-8 -*-
 # @Time : 16:29
 # @Author : hkk
@@ -26,7 +21,7 @@ import streamlit as st
 #     st.stop()
 
 
-# 👇 新方式：从 Streamlit Secrets 读取api
+# 从 Streamlit Secrets 读取api
 try:
     SILICONFLOW_API_KEY = st.secrets["SILICONFLOW_API_KEY"]
 except KeyError:
@@ -34,9 +29,9 @@ except KeyError:
     st.stop()
 
 
-MODEL_NAME = "Qwen/Qwen3-VL-30B-A3B-Instruct"  # 支持文本的版本更稳定
+MODEL_NAME = "Qwen/Qwen3-VL-30B-A3B-Instruct"  
 
-# 78 个变量白名单（保持不变）
+# 78 个变量白名单
 VARIABLES = {
     "机构标准扣罚单价", "机构分组2增量贡献度", "机构考核基数", "对比基数", "行员目标值", "年末",
     "利润参数", "行员标准计酬单价", "机构考核得分", "行员指标值", "当年已计价工资", "行员力争值",
@@ -151,10 +146,10 @@ st.set_page_config(
 # 页面标题
 st.title("📊 KPI智能自然语言生成系统")
 st.markdown("""
-**让业务人员一句话，自动生成可执行的KPI公式！**  
-✅ 支持79种银行考核逻辑  
+**让业务人员一句话，自动生成KPI公式！**  
+✅ 支持79种考核逻辑  
 ✅ 自动识别变量、补全格式  
-✅ 100% 输出合法JSON，可直接导入系统
+✅ 输出合法JSON
 """)
 
 # 输入框
@@ -220,11 +215,10 @@ st.markdown("""
 1. 将KPI规则用自然语言输入（如：“超计划200万，每10万加2分”）
 2. 点击 **“生成KPI公式”**
 3. 复制粘贴 `condition` 和 `formula` 到你的考核系统
-4. 无需懂编程！IT部门再也不用写公式了！
+
 
 ### 💡 支持的关键词：
 - 完成率、超计划、控制在、扣分、加分、每、以上、以下、达标、标杆、基数、上限、封顶  
 - 机构、行员、计划值、指标值、权重、目标值、考核基数
-
-> 👉 模板源自银行79个标准KPI公式，AI已内化逻辑，不再依赖模板匹配！
 """)
+
