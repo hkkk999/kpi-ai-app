@@ -1,3 +1,8 @@
+# _*_ coding : utf-8_*_
+# @Time :  15:52
+# @Author :hkk
+# @File : app
+# @Project : AutoExcelToPpt
 # -*- coding: utf-8 -*-
 # @Time : 16:29
 # @Author : hkk
@@ -5,22 +10,32 @@
 # @Project : AutoExcelToPpt
 # Streamlit 部署版：KPI 自然语言生成引擎
 
-# -*- coding: utf-8 -*-
 import os
 import json
 import re
 import streamlit as st
 # from dotenv import load_dotenv
 import requests
+# load_dotenv()
+#
+# # ============= 配置区 =============
+# SILICONFLOW_API_KEY = os.getenv("SILICONFLOW_API_KEY")
+# if not SILICONFLOW_API_KEY:
+#     st.error("❌ 请在 .env 文件中设置 SILICONFLOW_API_KEY=你的硅基流动APIKey")
+#     st.stop()
 
+
+# 👇 新方式：从 Streamlit Secrets 读取api
 try:
     SILICONFLOW_API_KEY = st.secrets["SILICONFLOW_API_KEY"]
 except KeyError:
     st.error("❌ API Key 未配置，请联系管理员设置 Streamlit Secrets")
     st.stop()
 
-MODEL_NAME = "Qwen/Qwen3-VL-30B-A3B-Instruct"
 
+MODEL_NAME = "Qwen/Qwen3-VL-30B-A3B-Instruct"  # 支持文本的版本更稳定
+
+# 78 个变量白名单（保持不变）
 VARIABLES = {
     "机构标准扣罚单价", "机构分组2增量贡献度", "机构考核基数", "对比基数", "行员目标值", "年末",
     "利润参数", "行员标准计酬单价", "机构考核得分", "行员指标值", "当年已计价工资", "行员力争值",
@@ -34,6 +49,7 @@ VARIABLES = {
     "机构指标分组平均", "无维度参数"
 }
 
+# 构建AI请求的提示词
 def build_prompt(user_input):
     var_list = ', '.join(VARIABLES)
     return f"""你是一个银行业绩考核系统AI专家，必须严格遵守以下规则：
@@ -69,6 +85,7 @@ def build_prompt(user_input):
 输入："{user_input}"
 """
 
+# 调用硅基流动 API
 def call_siliconflow(user_input):
     url = "https://api.siliconflow.cn/v1/chat/completions"
     headers = {
@@ -91,6 +108,7 @@ def call_siliconflow(user_input):
         result = response.json()
         content = result['choices'][0]['message']['content']
 
+        # 提取 JSON
         json_start = content.find('{')
         json_end = content.rfind('}') + 1
         if json_start == -1 or json_end == 0:
@@ -99,78 +117,80 @@ def call_siliconflow(user_input):
         json_str = content[json_start:json_end]
         parsed = json.loads(json_str)
 
+        # 修复变量格式 —— 自动补全 $ 变量名 []$
         def fix_var(text):
             for var in VARIABLES:
+                # 修复 $变量名$ → $ 变量名 []$
                 if f"${var}$" in text:
                     text = text.replace(f"${var}$", f"$ {var} []$")
+                # 修复 $ 变量名 $ → $ 变量名 []$
                 if f"$ {var} $" in text:
                     text = text.replace(f"$ {var} $", f"$ {var} []$")
+                # 修复 $ 变量名 → $ 变量名 []$
                 if f"$ {var}" in text and "]$" not in text:
                     text = text.replace(f"$ {var}", f"$ {var} []$")
             return text
 
         parsed["condition"] = fix_var(parsed.get("condition", ""))
         parsed["formula"] = fix_var(parsed.get("formula", ""))
-        parsed["explanation"] = user_input
+        parsed["explanation"] = user_input  # 强制使用原输入
 
         return parsed
 
     except Exception as e:
         return {"error": f"调用API失败：{str(e)}"}
 
-# ======== Streamlit 界面 =========
-st.set_page_config(page_title="📊 KPI智能生成助手", page_icon="📊", layout="centered")
+# ========== Streamlit 界面 ==========
+st.set_page_config(
+    page_title="🔥 KPI智能生成助手",
+    page_icon="📊",
+    layout="centered"
+)
 
+# 页面标题
 st.title("📊 KPI智能自然语言生成系统")
 st.markdown("""
 **让业务人员一句话，自动生成可执行的KPI公式！**  
-✅ 支持考核逻辑  
+✅ 支持79种银行考核逻辑  
 ✅ 自动识别变量、补全格式  
-✅ 输出JSON
+✅ 100% 输出合法JSON，可直接导入系统
 """)
 
-# 初始化 session_state
-if "last_input" not in st.session_state:
-    st.session_state.last_input = ""
-if "result" not in st.session_state:
-    st.session_state.result = None
-
+# 输入框
 user_input = st.text_area(
     "📝 请输入你的KPI考核规则（自然语言）：",
     placeholder="例如：完成率低于80%，扣（100-完成率）*0.3分\n\n控制在7088万以内得5分，超过得0分",
-    height=120,
-    key="user_input_area"
+    height=120
 )
 
+# 生成按钮
 if st.button("🚀 生成KPI公式", type="primary", use_container_width=True):
     if not user_input.strip():
         st.warning("⚠️ 请输入描述内容")
     else:
-        with st.spinner("🧠 AI正在理解你的需求，请稍候...（约3-5秒）"):
+        with st.spinner("🧠 AI正在理解你的需求，请稍候...（约5-8秒）"):
             result = call_siliconflow(user_input)
-            st.session_state.last_input = user_input
-            st.session_state.result = result
 
-st.divider()
+        st.divider()
 
-# 仅在有结果时才显示
-if st.session_state.result is not None:
-    result = st.session_state.result
+        if "error" in result:
+            st.error(f"❌ AI出错了：{result['error']}")
+            st.info("💡 建议：请用清晰的句子，例如：‘每超10万加2分’、‘完成率在60%~80%之间得3分’")
+        else:
+            # 显示结果
+            st.success("✅ AI生成成功！")
 
-    if "error" in result:
-        st.error(f"❌ AI出错了：{result['error']}")
-        st.info("💡 建议：请用清晰的句子，例如：'完成率在60%~80%之间得3分'")
-    else:
-        st.success("✅ AI生成成功！")
+            st.success("✅ AI生成成功！")
 
-# 创建三列，每一列包含一个框 + 下方一个按钮
-        col1, col2, col3 = st.columns(3)
+            # 创建三列，每一列包含一个框 + 下方一个按钮
+            col1, col2, col3 = st.columns(3)
 
-         # 定义一个复用的函数：生成一个“框 + 按钮”组合
-        def render_box_with_copy_btn(label, content, key_suffix):
-            with st.container():  # 确保内部布局垂直
-                 st.markdown(f"#### {label}")
-                 st.text_area(
+
+            # 定义一个复用的函数：生成一个“框 + 按钮”组合
+            def render_box_with_copy_btn(label, content, key_suffix):
+                with st.container():  # 确保内部布局垂直
+                    st.markdown(f"#### {label}")
+                    st.text_area(
                         label="",
                         value=content,
                         height=150,
@@ -180,16 +200,16 @@ if st.session_state.result is not None:
                         help="点击可复制，超长可横向滚动"
                     )
 
-                 # 复制按钮，使用 JavaScript 带反馈
-                 escaped_content = content.replace('"', '\\"')
-                 button_id = f"btn_{key_suffix}"
+                    # 复制按钮，使用 JavaScript 带反馈
+                    escaped_content = content.replace('"', '\\"')
+                    button_id = f"btn_{key_suffix}"
 
                     js_code = f"""
                     <script>
                     function copyToClipboard_{key_suffix}() {{
                         const button = document.getElementById('{button_id}');
                         const originalText = button.innerText;
-                        
+
                         navigator.clipboard.writeText("{escaped_content}").then(function() {{
                             button.innerText = "✔️ 已复制！";
                             button.style.backgroundColor = "#28a745";
@@ -212,6 +232,7 @@ if st.session_state.result is not None:
                     </button>
                     """
                     st.components.v1.html(js_code, height=70)
+
 
             # 第一列：条件框
             with col1:
@@ -236,21 +257,18 @@ if st.session_state.result is not None:
                 use_container_width=True
             )
 
-
+# 添加使用说明
 st.divider()
 st.markdown("""
 ### ℹ️ 如何使用？
 1. 将KPI规则用自然语言输入（如：“超计划200万，每10万加2分”）
 2. 点击 **“生成KPI公式”**
 3. 复制粘贴 `condition` 和 `formula` 到你的考核系统
-
+4. 无需懂编程！IT部门再也不用写公式了！
 
 ### 💡 支持的关键词：
-完成率、超计划、控制在、扣分、加分、每、以上、以下、达标、标杆、基数、上限、封顶
+- 完成率、超计划、控制在、扣分、加分、每、以上、以下、达标、标杆、基数、上限、封顶  
+- 机构、行员、计划值、指标值、权重、目标值、考核基数
+
+> 👉 模板源自银行79个标准KPI公式，AI已内化逻辑，不再依赖模板匹配！
 """)
-
-
-
-
-
-
