@@ -163,14 +163,14 @@ if st.session_state.result is not None:
     else:
         st.success("✅ AI生成成功！")
 
-            # 创建三列，每一列包含一个框 + 下方一个按钮
-            col1, col2, col3 = st.columns(3)
+# 创建三列，每一列包含一个框 + 下方一个按钮
+        col1, col2, col3 = st.columns(3)
 
-            # 定义一个复用的函数：生成一个“框 + 按钮”组合
-            def render_box_with_copy_btn(label, content, key_suffix):
-                with st.container():  # 确保内部布局垂直
-                    st.markdown(f"#### {label}")
-                    st.text_area(
+         # 定义一个复用的函数：生成一个“框 + 按钮”组合
+        def render_box_with_copy_btn(label, content, key_suffix):
+            with st.container():  # 确保内部布局垂直
+                 st.markdown(f"#### {label}")
+                 st.text_area(
                         label="",
                         value=content,
                         height=150,
@@ -180,9 +180,9 @@ if st.session_state.result is not None:
                         help="点击可复制，超长可横向滚动"
                     )
 
-                    # 复制按钮，使用 JavaScript 带反馈
-                    escaped_content = content.replace('"', '\\"')
-                    button_id = f"btn_{key_suffix}"
+                 # 复制按钮，使用 JavaScript 带反馈
+                 escaped_content = content.replace('"', '\\"')
+                 button_id = f"btn_{key_suffix}"
 
                     js_code = f"""
                     <script>
@@ -248,6 +248,7 @@ st.markdown("""
 ### 💡 支持的关键词：
 完成率、超计划、控制在、扣分、加分、每、以上、以下、达标、标杆、基数、上限、封顶
 """)
+
 
 
 
