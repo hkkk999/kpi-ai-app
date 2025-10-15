@@ -25,7 +25,7 @@ import requests
 #     st.stop()
 
 
-# 👇 新方式：从 Streamlit Secrets 读取api
+# 从 Streamlit Secrets 读取api
 try:
     SILICONFLOW_API_KEY = st.secrets["SILICONFLOW_API_KEY"]
 except KeyError:
@@ -147,115 +147,121 @@ st.set_page_config(
     layout="centered"
 )
 
-# 页面标题
+# ======== Streamlit 界面 =========
+st.set_page_config(page_title="📊 KPI智能生成助手", page_icon="📊", layout="centered")
+
 st.title("📊 KPI智能自然语言生成系统")
 st.markdown("""
 **让业务人员一句话，自动生成可执行的KPI公式！**  
-✅ 支持79种银行考核逻辑  
+✅ 支持考核逻辑  
 ✅ 自动识别变量、补全格式  
-✅ 100% 输出合法JSON，可直接导入系统
+✅ 输出JSON
 """)
 
-# 输入框
+# 初始化 Session State：确保数据持久存在
+if "last_input" not in st.session_state:
+    st.session_state.last_input = ""
+if "result" not in st.session_state:
+    st.session_state.result = None
+
 user_input = st.text_area(
     "📝 请输入你的KPI考核规则（自然语言）：",
     placeholder="例如：完成率低于80%，扣（100-完成率）*0.3分\n\n控制在7088万以内得5分，超过得0分",
-    height=120
+    height=120,
+    key="user_input_area"
 )
 
-# 生成按钮
+# 生成按钮：只在这个按钮被点击时更新 result
 if st.button("🚀 生成KPI公式", type="primary", use_container_width=True):
     if not user_input.strip():
         st.warning("⚠️ 请输入描述内容")
     else:
-        with st.spinner("🧠 AI正在理解你的需求，请稍候...（约5-8秒）"):
+        with st.spinner("🧠 AI正在理解你的需求，请稍候...（约3-5秒）"):
             result = call_siliconflow(user_input)
+            st.session_state.last_input = user_input
+            st.session_state.result = result  # ✅ 永久保存，不受其他按钮影响！
 
-        st.divider()
+st.divider()
 
-        if "error" in result:
-            st.error(f"❌ AI出错了：{result['error']}")
-            st.info("💡 建议：请用清晰的句子，例如：‘每超10万加2分’、‘完成率在60%~80%之间得3分’")
-        else:
-            # 显示结果
-            st.success("✅ AI生成成功！")
+# 只有当 result 有值时才显示内容（下载按钮不会清空它！）
+if st.session_state.result is not None:
+    result = st.session_state.result  # ✅ 从 session_state 获取，永不丢失！
 
-            st.success("✅ AI生成成功！")
+    if "error" in result:
+        st.error(f"❌ AI出错了：{result['error']}")
+        st.info("💡 建议：请用清晰的句子，例如：'完成率在60%~80%之间得3分'")
+    else:
+        st.success("✅ AI生成成功！")
 
-            # 创建三列，每一列包含一个框 + 下方一个按钮
-            col1, col2, col3 = st.columns(3)
-
-
-            # 定义一个复用的函数：生成一个“框 + 按钮”组合
-            def render_box_with_copy_btn(label, content, key_suffix):
-                with st.container():  # 确保内部布局垂直
-                    st.markdown(f"#### {label}")
-                    st.text_area(
-                        label="",
-                        value=content,
-                        height=150,
-                        key=f"{key_suffix}_display",
-                        disabled=True,
-                        label_visibility="hidden",
-                        help="点击可复制，超长可横向滚动"
-                    )
-
-                    # 复制按钮，使用 JavaScript 带反馈
-                    escaped_content = content.replace('"', '\\"')
-                    button_id = f"btn_{key_suffix}"
-
-                    js_code = f"""
-                    <script>
-                    function copyToClipboard_{key_suffix}() {{
-                        const button = document.getElementById('{button_id}');
-                        const originalText = button.innerText;
-
-                        navigator.clipboard.writeText("{escaped_content}").then(function() {{
-                            button.innerText = "✔️ 已复制！";
-                            button.style.backgroundColor = "#28a745";
-                            setTimeout(function() {{
-                                button.innerText = originalText;
-                                button.style.backgroundColor = "#0066cc";
-                            }}, 2000);
-                        }}).catch(function(err) {{
-                            alert("复制失败，请手动选择文本后按 Ctrl+C");
-                            console.error("复制失败: ", err);
-                        }});
-                    }}
-                    </script>
-                    <button id="{button_id}" onclick="copyToClipboard_{key_suffix}()" 
-                        style="width:100%; padding:10px; font-size:14px; 
-                               background-color:#0066cc; color:white; border:none; 
-                               border-radius:6px; cursor:pointer; margin-top:8px;
-                               transition: background-color 0.3s ease;">
-                        {label}
-                    </button>
-                    """
-                    st.components.v1.html(js_code, height=70)
+        # 创建三列，每列包含：文本框 + 复制按钮
+        col1, col2, col3 = st.columns(3)
 
 
-            # 第一列：条件框
-            with col1:
-                render_box_with_copy_btn("📋 复制条件", result["condition"], "condition")
+        def render_box_with_copy_btn(label, content, key_suffix):
+            with st.container():
+                st.markdown(f"#### {label}")
+                st.text_area(
+                    label="",
+                    value=content,
+                    height=150,
+                    key=f"{key_suffix}_display",
+                    disabled=True,
+                    label_visibility="hidden",
+                    help="点击可复制，超长可横向滚动"
+                )
 
-            # 第二列：公式框
-            with col2:
-                render_box_with_copy_btn("📋 复制公式", result["formula"], "formula")
+                # 复制按钮：带 JS 反馈
+                escaped_content = content.replace('"', '\\"')
+                button_id = f"btn_{key_suffix}"
 
-            # 第三列：说明框
-            with col3:
-                render_box_with_copy_btn("📋 复制说明", result["explanation"], "explanation")
+                js_code = f"""
+                <script>
+                function copyToClipboard_{key_suffix}() {{
+                    const button = document.getElementById('{button_id}');
+                    const originalText = button.innerText;
 
-            # 下载按钮单独放在最下方，居中对齐
-            st.markdown("<br><br>", unsafe_allow_html=True)  # 留点空隙
-            json_str = json.dumps(result, ensure_ascii=False, indent=2)
-            st.download_button(
-                label="💾 下载 JSON 文件",
-                data=json_str,
-                file_name="kpi_formula.json",
-                mime="application/json",
-                use_container_width=True
-            )
+                    navigator.clipboard.writeText("{escaped_content}").then(function() {{
+                        button.innerText = "✔️ 已复制！";
+                        button.style.backgroundColor = "#28a745";
+                        setTimeout(function() {{
+                            button.innerText = originalText;
+                            button.style.backgroundColor = "#0066cc";
+                        }}, 2000);
+                    }}).catch(function(err) {{
+                        alert("复制失败，请手动选择文本后按 Ctrl+C");
+                        console.error("复制失败: ", err);
+                    }});
+                }}
+                </script>
+                <button id="{button_id}" onclick="copyToClipboard_{key_suffix}()" 
+                    style="width:100%; padding:10px; font-size:14px; 
+                           background-color:#0066cc; color:white; border:none; 
+                           border-radius:6px; cursor:pointer; margin-top:8px;
+                           transition: background-color 0.3s ease;">
+                    {label}
+                </button>
+                """
+                st.components.v1.html(js_code, height=70)
+
+
+        # 每一列绑定一个框 + 按钮
+        with col1:
+            render_box_with_copy_btn("📋 复制条件", result["condition"], "condition")
+        with col2:
+            render_box_with_copy_btn("📋 复制公式", result["formula"], "formula")
+        with col3:
+            render_box_with_copy_btn("📋 复制说明", result["explanation"], "explanation")
+
+        # 下载按钮放在最下方，独立于三列（不会触发重新运行导致数据丢失）
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        json_str = json.dumps(result, ensure_ascii=False, indent=2)
+        st.download_button(
+            label="💾 下载 JSON 文件",
+            data=json_str,
+            file_name="kpi_formula.json",
+            mime="application/json",
+            use_container_width=True
+        )
 
 # 添加使用说明
 st.divider()
@@ -264,11 +270,9 @@ st.markdown("""
 1. 将KPI规则用自然语言输入（如：“超计划200万，每10万加2分”）
 2. 点击 **“生成KPI公式”**
 3. 复制粘贴 `condition` 和 `formula` 到你的考核系统
-4. 无需懂编程！IT部门再也不用写公式了！
 
 ### 💡 支持的关键词：
 - 完成率、超计划、控制在、扣分、加分、每、以上、以下、达标、标杆、基数、上限、封顶  
 - 机构、行员、计划值、指标值、权重、目标值、考核基数
 
-> 👉 模板源自银行79个标准KPI公式，AI已内化逻辑，不再依赖模板匹配！
 """)
