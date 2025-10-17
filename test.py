@@ -24,7 +24,7 @@ try:
 except KeyError:
     st.error("❌ API Key 未配置，请联系管理员设置 Streamlit Secrets")
     st.stop()
-MODEL_NAME = "Qwen/Qwen3-VL-30B-A3B-Instruct"
+MODEL_NAME = "Qwen/Qwen3-Omni-30B-A3B-Instruct"
 
 # ==================== 调用 API ====================
 def call_siliconflow(user_input):
@@ -222,3 +222,4 @@ if 'result' in st.session_state:
 
     with st.expander("📋 查看完整JSON代码"):
         st.code(json_str, language="json")
+
