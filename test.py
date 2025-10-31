@@ -57,13 +57,13 @@ def call_siliconflow(user_input):
         json_str = content[json_start:json_end]
         parsed = json.loads(json_str)
 
-        # 修复变量格式：确保所有 $var$ → $ var []$
+        # 修复变量格式：确保所有 $var$ → $var[]$
         def fix_var(text):
             for var in VARIABLES.VARIABLES:
-                text = text.replace(f"${var}$", f"$ {var} []$")
-                text = text.replace(f"$ {var} $", f"$ {var} []$")
+                text = text.replace(f"${var}$", f"${var}[]$")
+                text = text.replace(f"$ {var} $", f"${var}[]$")
                 if f"$ {var}" in text and "]$" not in text:
-                    text = text.replace(f"$ {var}", f"$ {var} []$")
+                    text = text.replace(f"$ {var}", f"${var}[]$")
             return text
 
         for item in parsed:
@@ -138,14 +138,14 @@ with st.sidebar:
     st.header("⚠️ 变量规范")
     st.info("""
     - 必须使用以下 **79个变量名**（请复制粘贴，避免拼写错误）
-    - 所有变量格式：`$ 变量名 []$`（注意空格和中括号）
-    - 示例：$ 机构计划值 []$，$ 权重 []$
+    - 所有变量格式：`$变量名[]$`
+    - 示例：$机构计划值[]$，$权重[]$
     - 百分比转小数：5% → 0.05，1.5% → 0.015
     - 1BP = 0.01% = 0.0001
     """)
     st.subheader("可用变量 (共79个)")
     for var in sorted(VARIABLES.VARIABLES):
-        st.text(f"• $ {var} []$")
+        st.text(f"• ${var}[]$")
 
 # ==================== 主界面：输入 + 生成 ====================
 st.subheader("✍️ 输入KPI规则描述")
@@ -222,4 +222,5 @@ if 'result' in st.session_state:
 
     with st.expander("📋 查看完整JSON代码"):
         st.code(json_str, language="json")
+
 
