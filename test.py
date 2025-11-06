@@ -44,7 +44,7 @@ def call_siliconflow(user_input):
     }
 
     try:
-        response = requests.post(url, json=data, headers=headers, timeout=30)
+        response = requests.post(url, json=data, headers=headers, timeout=1000)
         response.raise_for_status()
         content = response.json()['choices'][0]['message']['content']
 
@@ -222,5 +222,6 @@ if 'result' in st.session_state:
 
     with st.expander("📋 查看完整JSON代码"):
         st.code(json_str, language="json")
+
 
 
